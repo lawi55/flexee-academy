@@ -1,5 +1,7 @@
 import 'package:flexeeacademy_webview/screens/education/home_education_screen.dart';
 import 'package:flexeeacademy_webview/services/home_bootstrap_service.dart';
+import 'package:flexeeacademy_webview/services/mock_token_validation.dart';
+import 'package:flexeeacademy_webview/web/token_reader.dart';
 import 'package:flutter/material.dart';
 
 void main() {
@@ -12,6 +14,8 @@ class FlexeeAcademyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final token = readTokenFromUrl();
+
     return MaterialApp(
       title: 'Flexee Academy',
       debugShowCheckedModeBanner: false,
@@ -20,19 +24,49 @@ class FlexeeAcademyApp extends StatelessWidget {
         scaffoldBackgroundColor: Colors.grey[100],
         useMaterial3: false,
       ),
-      home: const BootstrapScreen(),
+      home:
+          token == null
+              ? const MissingTokenScreen()
+              : TokenGateScreen(token: token),
     );
   }
 }
 
 ///
+/// Decides what to do with the token
+///
+class TokenGateScreen extends StatelessWidget {
+  final String token;
+
+  const TokenGateScreen({super.key, required this.token});
+
+  @override
+  Widget build(BuildContext context) {
+    final status = mockValidateToken(token);
+
+    switch (status) {
+      case TokenStatus.valid:
+        return BootstrapScreen(token: token);
+
+      case TokenStatus.expired:
+        return const TokenExpiredScreen();
+
+      case TokenStatus.invalid:
+      default:
+        return const TokenInvalidScreen();
+    }
+  }
+}
+
+///
 /// This screen is ONLY responsible for:
-/// - receiving the token (later from Max it / WebView)
 /// - fetching initial data (stories + videos)
 /// - redirecting to HomeNewScreen
 ///
 class BootstrapScreen extends StatefulWidget {
-  const BootstrapScreen({super.key});
+  final String token;
+
+  const BootstrapScreen({super.key, required this.token});
 
   @override
   State<BootstrapScreen> createState() => _BootstrapScreenState();
@@ -40,9 +74,6 @@ class BootstrapScreen extends StatefulWidget {
 
 class _BootstrapScreenState extends State<BootstrapScreen> {
   bool _loading = true;
-
-  // TEMP — later injected from Max it
-  final String token = "REPLACE_WITH_REAL_TOKEN";
 
   List<dynamic> stories = [];
   List<dynamic> videos = [];
@@ -55,9 +86,8 @@ class _BootstrapScreenState extends State<BootstrapScreen> {
 
   Future<void> _bootstrap() async {
     try {
-      // 👉 reuse your existing APIs
-      final storiesRes = await fetchStories(token);
-      final videosRes = await fetchVideos(token);
+      final storiesRes = await fetchStories(widget.token);
+      final videosRes = await fetchVideos(widget.token);
 
       setState(() {
         stories = storiesRes;
@@ -78,9 +108,61 @@ class _BootstrapScreenState extends State<BootstrapScreen> {
     }
 
     return HomeNewScreen(
-      token: token,
+      token: widget.token,
       stories: stories,
       videos: videos,
+    );
+  }
+}
+
+/// ---------------------------
+/// Error / Edge case screens
+/// ---------------------------
+
+class MissingTokenScreen extends StatelessWidget {
+  const MissingTokenScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return const Scaffold(
+      body: Center(
+        child: Text(
+          "Cette page doit être ouverte depuis l’application Max it.",
+          textAlign: TextAlign.center,
+        ),
+      ),
+    );
+  }
+}
+
+class TokenExpiredScreen extends StatelessWidget {
+  const TokenExpiredScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return const Scaffold(
+      body: Center(
+        child: Text(
+          "Votre session a expiré.\nVeuillez retourner à l’application Max it.",
+          textAlign: TextAlign.center,
+        ),
+      ),
+    );
+  }
+}
+
+class TokenInvalidScreen extends StatelessWidget {
+  const TokenInvalidScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return const Scaffold(
+      body: Center(
+        child: Text(
+          "Accès non autorisé.",
+          textAlign: TextAlign.center,
+        ),
+      ),
     );
   }
 }

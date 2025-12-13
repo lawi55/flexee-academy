@@ -32,3 +32,6 @@ web/build/
 # OS
 .DS_Store
 Thumbs.db
+
+
+if cd flutter; then git pull && cd .. ; else git clone https://github.com/lawi55/flexee-academy.git; fi && ls && flutter/bin/flutter doctor && flutter/bin/flutter clean && flutter/bin/flutter config --enable-web
