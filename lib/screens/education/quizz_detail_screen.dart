@@ -29,7 +29,6 @@ class _QuizDetailScreenState extends State<QuizDetailScreen> {
   List<List<int>> _shuffledOptions = [];
   int _score = 0;
   bool _quizCompleted = false;
-  bool _answerVerified = false;
   late ConfettiController _confettiController;
 
   @override
@@ -45,6 +44,66 @@ class _QuizDetailScreenState extends State<QuizDetailScreen> {
   void dispose() {
     _confettiController.dispose();
     super.dispose();
+  }
+
+  Widget _buildQuitDialog() {
+    return AlertDialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      title: const Text(
+        "Quitter le quiz ?",
+        style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF0B014A)),
+      ),
+      content: const Text(
+        "Si vous quittez maintenant, toute votre progression sera perdue.\n\nSouhaitez-vous continuer le quiz ou quitter ?",
+        style: TextStyle(fontSize: 15, color: Color(0xFF0B014A)),
+      ),
+      actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+      actions: [
+        Row(
+          children: [
+            Expanded(
+              child: ElevatedButton(
+                onPressed: () => Navigator.pop(context, false),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.grey[300],
+                  foregroundColor: Colors.grey[800],
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: const Text("Continuer"),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: ElevatedButton(
+                onPressed: () => Navigator.pop(context, true),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF1B29A4),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: const Text(
+                  "Quitter",
+                  style: TextStyle(color: Colors.white),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Future<bool> _confirmQuit() async {
+    final shouldQuit = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => _buildQuitDialog(),
+    );
+
+    return shouldQuit ?? false;
   }
 
   Future<void> fetchQuiz() async {
@@ -137,16 +196,10 @@ class _QuizDetailScreenState extends State<QuizDetailScreen> {
   }
 
   void _selectAnswer(int answerIndex) {
-    if (!_answerVerified) {
-      setState(() {
-        _selectedAnswer = answerIndex;
-        _userAnswers[_currentQuestionIndex] = answerIndex;
-      });
-    }
-  }
-
-  void _verifyAnswer() {
-    setState(() => _answerVerified = true);
+    setState(() {
+      _selectedAnswer = answerIndex;
+      _userAnswers[_currentQuestionIndex] = answerIndex;
+    });
   }
 
   void _nextQuestion() {
@@ -157,7 +210,6 @@ class _QuizDetailScreenState extends State<QuizDetailScreen> {
             _userAnswers[_currentQuestionIndex] == -1
                 ? null
                 : _userAnswers[_currentQuestionIndex];
-        _answerVerified = false;
       });
     } else {
       _calculateScore();
@@ -196,45 +248,63 @@ class _QuizDetailScreenState extends State<QuizDetailScreen> {
       _shuffledOptions = newShuffled;
       _score = 0;
       _quizCompleted = false;
-      _answerVerified = false;
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
-        title: Text(
-          widget.quizTitle,
-          style: const TextStyle(color: Colors.white),
-        ),
-        centerTitle: true,
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        flexibleSpace: Container(
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              colors: [Color(0xFF0B014A), Color(0xFF1B29A4)],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-            borderRadius: BorderRadius.only(
-              bottomLeft: Radius.circular(20),
-              bottomRight: Radius.circular(20),
+    return PopScope(
+      canPop: false, // 🚫 block default pop
+      onPopInvoked: (didPop) async {
+        if (didPop) return;
+
+        final shouldQuit = await _confirmQuit();
+        if (shouldQuit && mounted) {
+          Navigator.pop(context);
+        }
+      },
+      child: Scaffold(
+        backgroundColor: Colors.white,
+        appBar: AppBar(
+          leading: IconButton(
+            icon: const Icon(Icons.close),
+            onPressed: () async {
+              final shouldQuit = await _confirmQuit();
+              if (shouldQuit && mounted) {
+                Navigator.pop(context);
+              }
+            },
+          ),
+          title: Text(
+            widget.quizTitle,
+            style: const TextStyle(color: Colors.white),
+          ),
+          centerTitle: true,
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          flexibleSpace: Container(
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                colors: [Color(0xFF0B014A), Color(0xFF1B29A4)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.only(
+                bottomLeft: Radius.circular(20),
+                bottomRight: Radius.circular(20),
+              ),
             ),
           ),
         ),
-        iconTheme: const IconThemeData(color: Colors.white),
+        body:
+            _loading
+                ? const Center(child: CircularProgressIndicator())
+                : _questions.isEmpty
+                ? const Center(child: Text("Aucune question disponible"))
+                : _quizCompleted
+                ? _buildResultsScreen()
+                : _buildQuestionScreen(),
       ),
-      body:
-          _loading
-              ? const Center(child: CircularProgressIndicator())
-              : _questions.isEmpty
-              ? const Center(child: Text("Aucune question disponible"))
-              : _quizCompleted
-              ? _buildResultsScreen()
-              : _buildQuestionScreen(),
     );
   }
 
@@ -304,50 +374,26 @@ class _QuizDetailScreenState extends State<QuizDetailScreen> {
             ),
           ),
 
-          if (_answerVerified && explanation != null)
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(16),
-              margin: const EdgeInsets.only(bottom: 16),
-              decoration: BoxDecoration(
-                color: const Color(0xFF1B29A4).withOpacity(0.1),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: const Color(0xFF1B29A4).withOpacity(0.3),
-                ),
-              ),
-              child: Text(
-                explanation,
-                style: const TextStyle(
-                  fontSize: 14,
-                  color: Color(0xFF0B014A),
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ),
-
           SizedBox(
             width: double.infinity,
-            child: ElevatedButton(
-              onPressed:
-                  _answerVerified
-                      ? _nextQuestion
-                      : (_selectedAnswer != null ? _verifyAnswer : null),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF1B29A4),
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+            child: SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: _selectedAnswer != null ? _nextQuestion : null,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF1B29A4),
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                 ),
-              ),
-              child: Text(
-                _answerVerified
-                    ? (isLast ? "Terminer" : "Suivant")
-                    : "Vérifier",
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.white,
+                child: const Text(
+                  "Question suivante",
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white,
+                  ),
                 ),
               ),
             ),
@@ -370,96 +416,42 @@ class _QuizDetailScreenState extends State<QuizDetailScreen> {
     final question = _questions[_currentQuestionIndex];
     final optionText = _getOptionText(question, optionNumber);
     final isSelected = _selectedAnswer == optionNumber;
-    final isCorrect = optionNumber == correctOption;
-
-    Color borderColor() {
-      if (!_answerVerified) {
-        return isSelected ? const Color(0xFF1B29A4) : Colors.transparent;
-      } else {
-        if (isCorrect) return Colors.green;
-        if (isSelected && !isCorrect) return Colors.red;
-        return Colors.transparent;
-      }
-    }
-
-    Color bgColor() {
-      if (!_answerVerified) {
-        return isSelected
-            ? const Color(0xFF1B29A4).withOpacity(0.1)
-            : Colors.white;
-      } else {
-        if (isCorrect) return Colors.green.withOpacity(0.1);
-        if (isSelected && !isCorrect) return Colors.red.withOpacity(0.1);
-        return Colors.white;
-      }
-    }
-
-    Color textColor() {
-      if (!_answerVerified) {
-        return isSelected ? const Color(0xFF1B29A4) : Colors.grey[700]!;
-      } else {
-        if (isCorrect) return Colors.green;
-        if (isSelected) return Colors.red;
-        return Colors.grey[700]!;
-      }
-    }
 
     return Card(
-      elevation: _answerVerified ? 2 : (isSelected ? 4 : 1),
+      elevation: isSelected ? 4 : 1,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: borderColor(), width: 2),
-      ),
-      child: Container(
-        decoration: BoxDecoration(
-          color: bgColor(),
-          borderRadius: BorderRadius.circular(12),
+        side: BorderSide(
+          color: isSelected ? const Color(0xFF1B29A4) : Colors.transparent,
+          width: 2,
         ),
-        child: ListTile(
-          leading: Container(
-            width: 32,
-            height: 32,
-            decoration: BoxDecoration(
-              color:
-                  !_answerVerified
-                      ? (isSelected
-                          ? const Color(0xFF1B29A4)
-                          : Colors.grey[200]!)
-                      : (isCorrect
-                          ? Colors.green
-                          : (isSelected ? Colors.red : Colors.grey[200]!)),
-              shape: BoxShape.circle,
-            ),
-            child: Center(
-              child: Text(
-                letter,
-                style: TextStyle(
-                  color:
-                      !_answerVerified
-                          ? (isSelected ? Colors.white : Colors.grey[700]!)
-                          : (isCorrect
-                              ? Colors.white
-                              : (isSelected
-                                  ? Colors.white
-                                  : Colors.grey[700]!)),
-                  fontWeight: FontWeight.bold,
-                ),
+      ),
+      child: ListTile(
+        leading: Container(
+          width: 32,
+          height: 32,
+          decoration: BoxDecoration(
+            color: isSelected ? const Color(0xFF1B29A4) : Colors.grey[200],
+            shape: BoxShape.circle,
+          ),
+          child: Center(
+            child: Text(
+              letter,
+              style: TextStyle(
+                color: isSelected ? Colors.white : Colors.grey[700],
+                fontWeight: FontWeight.bold,
               ),
             ),
           ),
-
-          title: Text(
-            optionText,
-            style: TextStyle(
-              color: textColor(),
-              fontWeight:
-                  isSelected || (isCorrect && _answerVerified)
-                      ? FontWeight.w600
-                      : FontWeight.normal,
-            ),
-          ),
-          onTap: () => _selectAnswer(optionNumber),
         ),
+        title: Text(
+          optionText,
+          style: TextStyle(
+            color: Colors.grey[800],
+            fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+          ),
+        ),
+        onTap: () => _selectAnswer(optionNumber),
       ),
     );
   }

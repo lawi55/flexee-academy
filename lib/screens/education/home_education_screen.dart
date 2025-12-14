@@ -232,7 +232,7 @@ class HomeNewScreen extends StatelessWidget {
                 const SizedBox(width: 12),
 
                 // 🔵 PILL BADGE
-                Container(
+                /* Container(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 12,
                     vertical: 6,
@@ -249,9 +249,8 @@ class HomeNewScreen extends StatelessWidget {
                       color: Color(0xFF1B29A4),
                     ),
                   ),
-                ),
+                ), */
 
-                const SizedBox(width: 8),
 
                 const Icon(
                   Icons.arrow_forward_ios_rounded,
@@ -340,7 +339,7 @@ Widget buildStoriesRow(List<dynamic> stories, String token) {
                   overflow: TextOverflow.ellipsis,
                   textAlign: TextAlign.center,
                   style: const TextStyle(
-                    fontSize: 12,
+                    fontSize: 11,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -370,7 +369,7 @@ Widget _buildUserStatsHeader() {
                 Icon(Icons.phone_rounded, size: 18, color: Color(0xFF1B29A4)),
                 SizedBox(width: 8),
                 Text(
-                  "+216 ** *** ***",
+                  "5* *** ***",
                   style: TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w600,
@@ -447,8 +446,8 @@ Widget _statItem({
                     ),
                     child: Image.asset(
                       assetIcon,
-                      width: 22,
-                      height: 22,
+                      width: 30,
+                      height: 30,
                       fit: BoxFit.contain,
                     ),
                   )
