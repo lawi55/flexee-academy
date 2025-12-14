@@ -14,7 +14,8 @@ class FlexeeAcademyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final token = readTokenFromUrl();
+    final token = "hello"; // TokenReader.getTokenFromUrl();
+    final phoneNumber = "+1234567890"; // TokenReader.getPhoneNumberFromUrl();
 
     return MaterialApp(
       title: 'Flexee Academy',
@@ -32,9 +33,6 @@ class FlexeeAcademyApp extends StatelessWidget {
   }
 }
 
-///
-/// Decides what to do with the token
-///
 class TokenGateScreen extends StatelessWidget {
   final String token;
 
@@ -58,15 +56,11 @@ class TokenGateScreen extends StatelessWidget {
   }
 }
 
-///
-/// This screen is ONLY responsible for:
-/// - fetching initial data (stories + videos)
-/// - redirecting to HomeNewScreen
-///
 class BootstrapScreen extends StatefulWidget {
   final String token;
+  final String? phoneNumber;
 
-  const BootstrapScreen({super.key, required this.token});
+  const BootstrapScreen({super.key, required this.token, this.phoneNumber});
 
   @override
   State<BootstrapScreen> createState() => _BootstrapScreenState();
@@ -109,15 +103,13 @@ class _BootstrapScreenState extends State<BootstrapScreen> {
 
     return HomeNewScreen(
       token: widget.token,
+      phoneNumber: widget.phoneNumber ?? '',
       stories: stories,
       videos: videos,
     );
   }
 }
 
-/// ---------------------------
-/// Error / Edge case screens
-/// ---------------------------
 
 class MissingTokenScreen extends StatelessWidget {
   const MissingTokenScreen({super.key});

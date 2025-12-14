@@ -5,12 +5,14 @@ import 'quizz_detail_screen.dart';
 
 class HomeNewScreen extends StatelessWidget {
   final String token;
+  final String phoneNumber;
   final List<dynamic> stories;
   final List<dynamic> videos;
 
   const HomeNewScreen({
     super.key,
     required this.token,
+    required this.phoneNumber,
     required this.stories,
     required this.videos,
   });
@@ -19,33 +21,27 @@ class HomeNewScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.grey[100],
-      
+
       body: ListView(
         children: [
           const SizedBox(height: 16),
 
-          // -----------------------
-          // STORIES ROW (YOUR WIDGET)
-          // -----------------------
-          _sectionTitle("Stories du jour 📖"),
+          // 👤 USER STATS HEADER
+          _buildUserStatsHeader(),
+
+          const SizedBox(height: 24),
+
+          _sectionTitle("Stories 📖"),
           const SizedBox(height: 12),
           buildStoriesRow(stories, token),
 
           const SizedBox(height: 24),
-
-          // -----------------------
-          // VIDEO DE LA SEMAINE
-          // -----------------------
-          _sectionTitle("Vidéo de la semaine 🎬"),
+          _sectionTitle("Vidéos 🎬"),
           const SizedBox(height: 12),
           _buildWeeklyVideos(context),
 
           const SizedBox(height: 28),
-
-          // -----------------------
-          // QUIZZES
-          // -----------------------
-          _sectionTitle("Power Quiz Actifs du Mois ⚡"),
+          _sectionTitle("Power Quiz Actifs ⚡"),
           const SizedBox(height: 12),
 
           _buildQuizCard(
@@ -54,6 +50,7 @@ class HomeNewScreen extends StatelessWidget {
             subtitle: "Idéal pour démarrer en douceur",
             difficulty: "easy",
             color: const Color(0xFF4CAF50),
+            icon: Icons.sentiment_satisfied_rounded,
           ),
           const SizedBox(height: 12),
 
@@ -63,6 +60,7 @@ class HomeNewScreen extends StatelessWidget {
             subtitle: "Un vrai test de vos connaissances",
             difficulty: "medium",
             color: const Color(0xFFFF9800),
+            icon: Icons.local_fire_department_rounded,
           ),
           const SizedBox(height: 12),
 
@@ -72,6 +70,7 @@ class HomeNewScreen extends StatelessWidget {
             subtitle: "Pour les champions de la finance !",
             difficulty: "hard",
             color: const Color(0xFFE53935),
+            icon: Icons.psychology_rounded,
           ),
 
           const SizedBox(height: 24),
@@ -80,9 +79,6 @@ class HomeNewScreen extends StatelessWidget {
     );
   }
 
-  // -----------------------
-  // SECTION TITLE
-  // -----------------------
   Widget _sectionTitle(String title) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -97,9 +93,6 @@ class HomeNewScreen extends StatelessWidget {
     );
   }
 
-  // -----------------------
-  // VIDEO SECTION (CLOUDINARY SAFE)
-  // -----------------------
   Widget _buildWeeklyVideos(BuildContext context) {
     final weeklyVideos = videos.take(5).toList();
 
@@ -169,119 +162,110 @@ class HomeNewScreen extends StatelessWidget {
   }
 
   Widget _buildQuizCard(
-  BuildContext context, {
-  required String title,
-  required String subtitle,
-  required String difficulty,
-  required Color color,
-}) {
-  return Padding(
-    padding: const EdgeInsets.symmetric(horizontal: 16),
-    child: GestureDetector(
-      onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => QuizDetailScreen(
-              token: token,
-              difficulty: difficulty,
-              quizTitle: title,
+    BuildContext context, {
+    required String title,
+    required String subtitle,
+    required String difficulty,
+    required Color color,
+    IconData icon = Icons.bolt_rounded, // ✅ default icon
+  }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: GestureDetector(
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder:
+                  (_) => QuizDetailScreen(
+                    token: token,
+                    difficulty: difficulty,
+                    quizTitle: title,
+                  ),
             ),
+          );
+        },
+        child: Card(
+          elevation: 2,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
           ),
-        );
-      },
-      child: Card(
-        elevation: 2,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(18),
-          child: Row(
-            children: [
-              // Icon
-              Container(
-                width: 55,
-                height: 55,
-                decoration: BoxDecoration(
-                  color: color.withOpacity(0.15),
-                  borderRadius: BorderRadius.circular(14),
+          child: Padding(
+            padding: const EdgeInsets.all(18),
+            child: Row(
+              children: [
+                // Icon
+                Container(
+                  width: 55,
+                  height: 55,
+                  decoration: BoxDecoration(
+                    color: color.withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: Icon(icon, size: 32, color: color),
                 ),
-                child: Icon(
-                  Icons.bolt_rounded,
-                  size: 32,
-                  color: color,
-                ),
-              ),
 
-              const SizedBox(width: 16),
+                const SizedBox(width: 16),
 
-              // Title & subtitle
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w700,
-                        color: Color(0xFF0B014A),
+                // Title & subtitle
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFF0B014A),
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      subtitle,
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: Colors.grey[600],
+                      const SizedBox(height: 6),
+                      Text(
+                        subtitle,
+                        style: TextStyle(fontSize: 13, color: Colors.grey[600]),
                       ),
-                    ),
-                  ],
-                ),
-              ),
-
-              const SizedBox(width: 12),
-
-              // 🔵 PILL BADGE
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 6,
-                ),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF1B29A4).withOpacity(0.12),
-                  borderRadius: BorderRadius.circular(999), // capsule
-                ),
-                child: const Text(
-                  "1 quiz actif par mois",
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xFF1B29A4),
+                    ],
                   ),
                 ),
-              ),
 
-              const SizedBox(width: 8),
+                const SizedBox(width: 12),
 
-              const Icon(
-                Icons.arrow_forward_ios_rounded,
-                size: 16,
-                color: Color(0xFF1B29A4),
-              ),
-            ],
+                // 🔵 PILL BADGE
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF1B29A4).withOpacity(0.12),
+                    borderRadius: BorderRadius.circular(999), // capsule
+                  ),
+                  child: const Text(
+                    "1 quiz actif par mois",
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFF1B29A4),
+                    ),
+                  ),
+                ),
+
+                const SizedBox(width: 8),
+
+                const Icon(
+                  Icons.arrow_forward_ios_rounded,
+                  size: 16,
+                  color: Color(0xFF1B29A4),
+                ),
+              ],
+            ),
           ),
         ),
       ),
-    ),
-  );
-}
+    );
+  }
 
-
-  // -----------------------
-  // CLOUDINARY THUMB HELPER (YOURS)
-  // -----------------------
   String? _cloudinaryThumb(String? videoUrl) {
     if (videoUrl == null) return null;
     return videoUrl.replaceFirst(
@@ -366,5 +350,126 @@ Widget buildStoriesRow(List<dynamic> stories, String token) {
         );
       },
     ),
+  );
+}
+
+Widget _buildUserStatsHeader() {
+  return Padding(
+    padding: const EdgeInsets.symmetric(horizontal: 16),
+    child: Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Phone number
+            Row(
+              children: const [
+                Icon(Icons.phone_rounded, size: 18, color: Color(0xFF1B29A4)),
+                SizedBox(width: 8),
+                Text(
+                  "+216 ** *** ***",
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF0B014A),
+                  ),
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 16),
+
+            // Stats row
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                _statItem(
+                  assetIcon: 'assets/academy/streak.png',
+                  label: "Streak",
+                  value: "5 jours",
+                  color: Colors.orange,
+                ),
+
+                _statItem(
+                  icon: Icons.star_rounded,
+                  label: "Score",
+                  value: "1200",
+                  color: Colors.amber,
+                ),
+                _statItem(
+                  icon: Icons.emoji_events_rounded,
+                  label: "Rang",
+                  value: "Bronze",
+                  color: Colors.brown,
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
+}
+
+Widget _statItem({
+  IconData? icon,
+  String? assetIcon,
+  required String label,
+  required String value,
+  required Color color,
+}) {
+  return Column(
+    children: [
+      Container(
+        width: 40,
+        height: 40,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: color.withOpacity(0.15),
+        ),
+        child: Center(
+          child:
+              assetIcon != null
+                  ? Container(
+                    // 🔥 GLOW EFFECT
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.orange.withOpacity(0.6),
+                          blurRadius: 12,
+                          spreadRadius: 2,
+                        ),
+                      ],
+                    ),
+                    child: Image.asset(
+                      assetIcon,
+                      width: 22,
+                      height: 22,
+                      fit: BoxFit.contain,
+                    ),
+                  )
+                  : Icon(icon, color: color, size: 22),
+        ),
+      ),
+
+      const SizedBox(height: 6),
+
+      Text(
+        value,
+        style: const TextStyle(
+          fontSize: 14,
+          fontWeight: FontWeight.w700,
+          color: Color(0xFF0B014A),
+        ),
+      ),
+
+      const SizedBox(height: 2),
+
+      Text(label, style: TextStyle(fontSize: 11, color: Colors.grey[600])),
+    ],
   );
 }

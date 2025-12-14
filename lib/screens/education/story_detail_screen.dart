@@ -57,7 +57,9 @@ class _StoryDetailScreenState extends State<StoryDetailScreen>
       (index) =>
           AnimationController(vsync: this, duration: const Duration(seconds: 7))
             ..addStatusListener((status) {
-              if (status == AnimationStatus.completed && !_isClosing && index == _currentPage) {
+              if (status == AnimationStatus.completed &&
+                  !_isClosing &&
+                  index == _currentPage) {
                 _nextSlide();
               }
             }),
@@ -70,19 +72,18 @@ class _StoryDetailScreenState extends State<StoryDetailScreen>
 
   void _nextSlide() {
     if (_isClosing) return;
-    
+
     if (_currentPage < _slides.length - 1) {
       setState(() {
         _currentPage++;
       });
       // Fill the current progress bar
-      if (_currentPage-1 < _progressControllers.length) {
-        _progressControllers[_currentPage-1].stop();
-        _progressControllers[_currentPage-1].value = 1.0;
+      if (_currentPage - 1 < _progressControllers.length) {
+        _progressControllers[_currentPage - 1].stop();
+        _progressControllers[_currentPage - 1].value = 1.0;
         // Prevent the listener from triggering
-        
       }
-      
+
       // Start next progress bar
       if (_currentPage < _progressControllers.length) {
         _progressControllers[_currentPage].forward();
@@ -112,8 +113,7 @@ class _StoryDetailScreenState extends State<StoryDetailScreen>
         _progressControllers[_currentPage].reset();
         _progressControllers[_currentPage].forward();
       }
-    }
-    else if (_currentPage == 0) {
+    } else if (_currentPage == 0) {
       // Restart the first slide's progress bar
       if (_progressControllers.isNotEmpty) {
         _progressControllers[0].stop();
@@ -133,7 +133,9 @@ class _StoryDetailScreenState extends State<StoryDetailScreen>
   Future<void> fetchSlides() async {
     try {
       final response = await http.get(
-        Uri.parse("https://flexee-pay-backend.onrender.com/edu/${widget.storyId}"),
+        Uri.parse(
+          "https://flexee-pay-backend.onrender.com/edu/${widget.storyId}",
+        ),
         headers: {'Authorization': 'Bearer ${widget.token}'},
       );
 
@@ -278,6 +280,31 @@ class _StoryDetailScreenState extends State<StoryDetailScreen>
                       ),
                     ),
 
+                    // Tap areas for navigation
+                    Positioned.fill(
+                      child: Row(
+                        children: [
+                          // Left 30% for previous
+                          Expanded(
+                            flex: 3,
+                            child: GestureDetector(
+                              onTap: _previousSlide,
+                              behavior: HitTestBehavior.translucent,
+                            ),
+                          ),
+                          // Middle 40% (no action)
+                          Expanded(flex: 4, child: Container()),
+                          // Right 30% for next
+                          Expanded(
+                            flex: 3,
+                            child: GestureDetector(
+                              onTap: _nextSlide,
+                              behavior: HitTestBehavior.translucent,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                     // Header with title and close button
                     Positioned(
                       top: 70,
@@ -332,32 +359,6 @@ class _StoryDetailScreenState extends State<StoryDetailScreen>
                         ],
                       ),
                     ),
-
-                    // Tap areas for navigation
-                    Positioned.fill(
-                      child: Row(
-                        children: [
-                          // Left 30% for previous
-                          Expanded(
-                            flex: 3,
-                            child: GestureDetector(
-                              onTap: _previousSlide,
-                              behavior: HitTestBehavior.translucent,
-                            ),
-                          ),
-                          // Middle 40% (no action)
-                          Expanded(flex: 4, child: Container()),
-                          // Right 30% for next
-                          Expanded(
-                            flex: 3,
-                            child: GestureDetector(
-                              onTap: _nextSlide,
-                              behavior: HitTestBehavior.translucent,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
                   ],
                 ),
       ),
@@ -365,63 +366,63 @@ class _StoryDetailScreenState extends State<StoryDetailScreen>
   }
 
   Widget _buildCurrentSlide() {
-  if (_currentPage >= _slides.length) return Container();
-  final slide = _slides[_currentPage];
-  final imageUrl = slide["imageUrl"];
-  final content = slide["content"];
+    if (_currentPage >= _slides.length) return Container();
+    final slide = _slides[_currentPage];
+    final imageUrl = slide["imageUrl"];
+    final content = slide["content"];
 
-  return Stack(
-    children: [
-      // 🔥 BACKGROUND — Expanded edges of the image
-      if (imageUrl != null)
+    return Stack(
+      children: [
+        // 🔥 BACKGROUND — Expanded edges of the image
+        if (imageUrl != null)
+          Positioned.fill(
+            child: Image.network(
+              imageUrl,
+              fit: BoxFit.cover, // expands to fill screen (edges stretch)
+            ),
+          ),
+
+        // 🔥 LIGHT BLUR TO SOFTEN THE EDGES
         Positioned.fill(
-          child: Image.network(
-            imageUrl,
-            fit: BoxFit.cover, // expands to fill screen (edges stretch)
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+            child: Container(
+              color: Colors.black.withOpacity(0.15), // very light darkening
+            ),
           ),
         ),
 
-      // 🔥 LIGHT BLUR TO SOFTEN THE EDGES
-      Positioned.fill(
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-          child: Container(
-            color: Colors.black.withOpacity(0.15), // very light darkening
+        // ⭐ FOREGROUND — Real image, not stretched
+        if (imageUrl != null)
+          Positioned.fill(
+            child: Image.network(
+              imageUrl,
+              fit: BoxFit.contain, // keep original aspect ratio
+            ),
           ),
-        ),
-      ),
 
-      // ⭐ FOREGROUND — Real image, not stretched
-      if (imageUrl != null)
-        Positioned.fill(
-          child: Image.network(
-            imageUrl,
-            fit: BoxFit.contain, // keep original aspect ratio
-          ),
-        ),
-
-      // ⭐ Text content
-      Positioned(
-        bottom: 110,
-        left: 24,
-        right: 24,
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.end,
-          children: [
-            if (content != null)
-              Text(
-                content,
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
+        // ⭐ Text content
+        Positioned(
+          bottom: 110,
+          left: 24,
+          right: 24,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              if (content != null)
+                Text(
+                  content,
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                  textAlign: TextAlign.center,
                 ),
-                textAlign: TextAlign.center,
-              ),
-          ],
+            ],
+          ),
         ),
-      ),
-    ],
-  );
+      ],
+    );
   }
 }
