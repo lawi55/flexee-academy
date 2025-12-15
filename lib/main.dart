@@ -1,6 +1,7 @@
 import 'package:flexeeacademy_webview/screens/education/home_education_screen.dart';
 import 'package:flexeeacademy_webview/services/home_bootstrap_service.dart';
 import 'package:flexeeacademy_webview/services/mock_token_validation.dart';
+import 'package:flexeeacademy_webview/web/token_reader.dart';
 import 'package:flutter/material.dart';
 
 void main() {
@@ -15,11 +16,13 @@ class FlexeeAcademyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     /// 🔧 DUMMY DATA (for now)
     /// Later → replace with TokenReader / JS bridge
-    const String? token = 'valid_token_example';
-    const String phoneNumber = "+1234567890";
+    // const String? token = 'valid_token_example';
+    // const String phoneNumber = "+1234567890";
+    final token = readTokenFromUrl();
+    final phoneNumber = readPhoneFromUrl();
 
     return MaterialApp(
-      title: 'Flexee Academy',  
+      title: 'Flexee Academy',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         fontFamily: 'Roboto',
@@ -29,7 +32,7 @@ class FlexeeAcademyApp extends StatelessWidget {
       home:
           token == null || token.isEmpty
               ? const MissingTokenScreen()
-              : TokenGateScreen(token: token, phoneNumber: phoneNumber),
+              : TokenGateScreen(token: token, phoneNumber: phoneNumber ?? ''),
     );
   }
 }
@@ -56,7 +59,6 @@ class TokenGateScreen extends StatelessWidget {
         return const TokenExpiredScreen();
 
       case TokenStatus.invalid:
-      default:
         return const TokenInvalidScreen();
     }
   }
