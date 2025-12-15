@@ -1,4 +1,5 @@
 import 'package:confetti/confetti.dart';
+import 'package:flexeeacademy_webview/services/quiz_cooldown_service.dart';
 import 'package:flexeeacademy_webview/services/score_service.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
@@ -29,6 +30,7 @@ class _QuizDetailScreenState extends State<QuizDetailScreen> {
   List<int> _userAnswers = [];
   List<List<int>> _shuffledOptions = [];
   int _quizScore = 0;
+  double _quizPercentage = 0;
   bool _quizCompleted = false;
   late ConfettiController _confettiController;
 
@@ -234,19 +236,30 @@ class _QuizDetailScreenState extends State<QuizDetailScreen> {
       }
     }
 
-    // ✅ 10 points per correct answer, max 100
-    final int calculatedScore = (correctAnswers * 10).clamp(0, 100);
+    final double percentage = (correctAnswers / _questions.length) * 100;
 
-    // ✅ Save to local storage
+    int calculatedScore = 0;
+
+    if (percentage == 100) {
+      calculatedScore = 100;
+    } else if (percentage >= 90) {
+      calculatedScore = 50;
+    } else if (percentage >= 80) {
+      calculatedScore = 20;
+    } else {
+      calculatedScore = 0;
+    }
+
     await ScoreService.addScore(calculatedScore);
+    await QuizCooldownService.markPlayed(widget.difficulty);
 
     setState(() {
-      _quizScore = calculatedScore; // ⭐ SINGLE SOURCE
+      _quizPercentage = percentage;
+      _quizScore = calculatedScore;
       _quizCompleted = true;
     });
 
-    // 🎉 Confetti if passed
-    if (_quizScore >= 70) {
+    if (calculatedScore > 0) {
       _confettiController.play();
     }
   }
@@ -494,13 +507,26 @@ class _QuizDetailScreenState extends State<QuizDetailScreen> {
                 ),
               ),
               const SizedBox(height: 16),
-              Text(
-                'Score : $_quizScore points',
-                style: TextStyle(
-                  fontSize: 32,
-                  fontWeight: FontWeight.bold,
-                  color: passed ? Colors.green : Colors.orange,
-                ),
+              Column(
+                children: [
+                  Text(
+                    '${_quizPercentage.round()}%',
+                    style: TextStyle(
+                      fontSize: 40,
+                      fontWeight: FontWeight.bold,
+                      color: passed ? Colors.green : Colors.orange,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    '+ $_quizScore points',
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFF0B014A),
+                    ),
+                  ),
+                ],
               ),
 
               const SizedBox(height: 8),

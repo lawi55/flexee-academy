@@ -1,3 +1,4 @@
+import 'package:flexeeacademy_webview/services/quiz_cooldown_service.dart';
 import 'package:flexeeacademy_webview/services/score_service.dart';
 import 'package:flutter/material.dart';
 import 'story_detail_screen.dart';
@@ -73,7 +74,7 @@ class _HomeNewScreenState extends State<HomeNewScreen> {
             subtitle: "Idéal pour démarrer en douceur",
             difficulty: "easy",
             color: const Color(0xFF4CAF50),
-            icon: Icons.sentiment_satisfied_rounded,
+            icon: Icons.bolt_rounded,
           ),
           const SizedBox(height: 12),
 
@@ -196,6 +197,29 @@ class _HomeNewScreenState extends State<HomeNewScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: GestureDetector(
         onTap: () async {
+          final canPlay = await QuizCooldownService.canPlay(difficulty);
+
+          if (!canPlay) {
+            final remaining = await QuizCooldownService.remainingTime(
+              difficulty,
+            );
+
+            final hours = remaining?.inHours ?? 0;
+            final minutes =
+                remaining != null ? remaining.inMinutes.remainder(60) : 0;
+
+            if (context.mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    'Ce quiz sera disponible dans $hours h $minutes min',
+                  ),
+                ),
+              );
+            }
+            return;
+          }
+
           await Navigator.push(
             context,
             MaterialPageRoute(
@@ -208,82 +232,152 @@ class _HomeNewScreenState extends State<HomeNewScreen> {
             ),
           );
 
-          _loadScore();
+          _loadScore(); // refresh score after return
         },
+        child: FutureBuilder<bool>(
+          future: QuizCooldownService.canPlay(difficulty),
+          builder: (context, snapshot) {
+            final canPlay = snapshot.data ?? true;
 
-        child: Card(
-          elevation: 2,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(18),
-            child: Row(
-              children: [
-                // Icon
-                Container(
-                  width: 55,
-                  height: 55,
-                  decoration: BoxDecoration(
-                    color: color.withOpacity(0.15),
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                  child: Icon(icon, size: 32, color: color),
+            return Opacity(
+              opacity: canPlay ? 1.0 : 0.55,
+              child: Card(
+                elevation: canPlay ? 2 : 0,
+                color: canPlay ? Colors.white : Colors.grey.shade200,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
                 ),
-
-                const SizedBox(width: 16),
-
-                // Title & subtitle
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                child: Padding(
+                  padding: const EdgeInsets.all(18),
+                  child: Row(
                     children: [
-                      Text(
-                        title,
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w700,
-                          color: Color(0xFF0B014A),
+                      // Icon
+                      Container(
+                        width: 55,
+                        height: 55,
+                        decoration: BoxDecoration(
+                          color:
+                              canPlay
+                                  ? color.withOpacity(0.15)
+                                  : Colors.grey.shade300,
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                        child: Icon(
+                          icon,
+                          size: 32,
+                          color: canPlay ? color : Colors.grey,
                         ),
                       ),
-                      const SizedBox(height: 6),
-                      Text(
-                        subtitle,
-                        style: TextStyle(fontSize: 13, color: Colors.grey[600]),
+
+                      const SizedBox(width: 16),
+
+                      // Title & subtitle
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              title,
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w700,
+                                color:
+                                    canPlay
+                                        ? const Color(0xFF0B014A)
+                                        : Colors.grey,
+                              ),
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              subtitle,
+                              style: TextStyle(
+                                fontSize: 13,
+                                color:
+                                    canPlay
+                                        ? Colors.grey[600]
+                                        : Colors.grey[500],
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
+
+                      const SizedBox(width: 12),
+
+                      // 🔵 PILL BADGE
+                      /* Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF1B29A4).withOpacity(0.12),
+                        borderRadius: BorderRadius.circular(999), // capsule
+                      ),
+                      child: const Text(
+                        "1 quiz actif par mois",
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF1B29A4),
+                        ),
+                      ),
+                    ), */
+                      if (canPlay)
+                        const Icon(
+                          Icons.arrow_forward_ios_rounded,
+                          size: 16,
+                          color: Color(0xFFFF7901),
+                        )
+                      else
+                        FutureBuilder<Duration?>(
+                          future: QuizCooldownService.remainingTime(difficulty),
+                          builder: (context, snap) {
+                            final remaining = snap.data;
+
+                            final hours = remaining?.inHours ?? 0;
+                            final minutes =
+                                remaining != null
+                                    ? remaining.inMinutes.remainder(60)
+                                    : 0;
+
+                            return Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 6,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.grey.shade300,
+                                borderRadius: BorderRadius.circular(999),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(
+                                    Icons.lock_rounded,
+                                    size: 14,
+                                    color: Colors.grey,
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    '${hours}h ${minutes}m',
+                                    style: const TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w600,
+                                      color: Colors.grey,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+                          },
+                        ),
                     ],
                   ),
                 ),
-
-                const SizedBox(width: 12),
-
-                // 🔵 PILL BADGE
-                /* Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 6,
-                  ),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF1B29A4).withOpacity(0.12),
-                    borderRadius: BorderRadius.circular(999), // capsule
-                  ),
-                  child: const Text(
-                    "1 quiz actif par mois",
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xFF1B29A4),
-                    ),
-                  ),
-                ), */
-                const Icon(
-                  Icons.arrow_forward_ios_rounded,
-                  size: 16,
-                  color: Color((0xFFFF7901)),
-                ),
-              ],
-            ),
-          ),
+              ),
+            );
+          },
         ),
       ),
     );
