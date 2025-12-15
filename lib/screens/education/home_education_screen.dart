@@ -1,9 +1,10 @@
+import 'package:flexeeacademy_webview/services/score_service.dart';
 import 'package:flutter/material.dart';
 import 'story_detail_screen.dart';
 import 'video_player_screen.dart';
 import 'quizz_detail_screen.dart';
 
-class HomeNewScreen extends StatelessWidget {
+class HomeNewScreen extends StatefulWidget {
   final String token;
   final String phoneNumber;
   final List<dynamic> stories;
@@ -18,6 +19,28 @@ class HomeNewScreen extends StatelessWidget {
   });
 
   @override
+  State<HomeNewScreen> createState() => _HomeNewScreenState();
+}
+
+class _HomeNewScreenState extends State<HomeNewScreen> {
+  int _totalScore = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadScore();
+  }
+
+  Future<void> _loadScore() async {
+    final score = await ScoreService.getTotalScore();
+    if (mounted) {
+      setState(() {
+        _totalScore = score;
+      });
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.grey[100],
@@ -27,13 +50,13 @@ class HomeNewScreen extends StatelessWidget {
           const SizedBox(height: 16),
 
           // 👤 USER STATS HEADER
-          _buildUserStatsHeader(),
+          _buildUserStatsHeader(_totalScore, widget.phoneNumber),
 
           const SizedBox(height: 24),
 
           _sectionTitle("Stories 📖"),
           const SizedBox(height: 12),
-          buildStoriesRow(stories, token),
+          buildStoriesRow(widget.stories, widget.token),
 
           const SizedBox(height: 24),
           _sectionTitle("Vidéos 🎬"),
@@ -94,7 +117,7 @@ class HomeNewScreen extends StatelessWidget {
   }
 
   Widget _buildWeeklyVideos(BuildContext context) {
-    final weeklyVideos = videos.take(5).toList();
+    final weeklyVideos = widget.videos.take(5).toList();
 
     return SizedBox(
       height: 160,
@@ -149,7 +172,7 @@ class HomeNewScreen extends StatelessWidget {
                     const Icon(
                       Icons.play_circle_fill_rounded,
                       size: 56,
-                      color: Color(0xFF1B29A4), // blue play button
+                      color: Color((0xFFFF7901)), // blue play button
                     ),
                   ],
                 ),
@@ -172,19 +195,22 @@ class HomeNewScreen extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: GestureDetector(
-        onTap: () {
-          Navigator.push(
+        onTap: () async {
+          await Navigator.push(
             context,
             MaterialPageRoute(
               builder:
                   (_) => QuizDetailScreen(
-                    token: token,
+                    token: widget.token,
                     difficulty: difficulty,
                     quizTitle: title,
                   ),
             ),
           );
+
+          _loadScore();
         },
+
         child: Card(
           elevation: 2,
           shape: RoundedRectangleBorder(
@@ -250,12 +276,10 @@ class HomeNewScreen extends StatelessWidget {
                     ),
                   ),
                 ), */
-
-
                 const Icon(
                   Icons.arrow_forward_ios_rounded,
                   size: 16,
-                  color: Color(0xFF1B29A4),
+                  color: Color((0xFFFF7901)),
                 ),
               ],
             ),
@@ -352,7 +376,7 @@ Widget buildStoriesRow(List<dynamic> stories, String token) {
   );
 }
 
-Widget _buildUserStatsHeader() {
+Widget _buildUserStatsHeader(int totalScore, String phoneNumber) {
   return Padding(
     padding: const EdgeInsets.symmetric(horizontal: 16),
     child: Card(
@@ -365,12 +389,12 @@ Widget _buildUserStatsHeader() {
           children: [
             // Phone number
             Row(
-              children: const [
-                Icon(Icons.phone_rounded, size: 18, color: Color(0xFF1B29A4)),
+              children: [
+                Icon(Icons.phone_rounded, size: 18, color: Color(0xFFFF7901)),
                 SizedBox(width: 8),
                 Text(
-                  "5* *** ***",
-                  style: TextStyle(
+                  phoneNumber,
+                  style: const TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w600,
                     color: Color(0xFF0B014A),
@@ -395,9 +419,10 @@ Widget _buildUserStatsHeader() {
                 _statItem(
                   icon: Icons.star_rounded,
                   label: "Score",
-                  value: "1200",
+                  value: totalScore.toString(),
                   color: Colors.amber,
                 ),
+
                 _statItem(
                   icon: Icons.emoji_events_rounded,
                   label: "Rang",

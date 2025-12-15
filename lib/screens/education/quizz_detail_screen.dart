@@ -1,4 +1,5 @@
 import 'package:confetti/confetti.dart';
+import 'package:flexeeacademy_webview/services/score_service.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
@@ -27,7 +28,7 @@ class _QuizDetailScreenState extends State<QuizDetailScreen> {
   int? _selectedAnswer;
   List<int> _userAnswers = [];
   List<List<int>> _shuffledOptions = [];
-  int _score = 0;
+  int _quizScore = 0;
   bool _quizCompleted = false;
   late ConfettiController _confettiController;
 
@@ -51,11 +52,14 @@ class _QuizDetailScreenState extends State<QuizDetailScreen> {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       title: const Text(
         "Quitter le quiz ?",
-        style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF0B014A)),
+        style: TextStyle(
+          fontWeight: FontWeight.bold,
+          color: Color((0xFF0B014A)),
+        ),
       ),
       content: const Text(
         "Si vous quittez maintenant, toute votre progression sera perdue.\n\nSouhaitez-vous continuer le quiz ou quitter ?",
-        style: TextStyle(fontSize: 15, color: Color(0xFF0B014A)),
+        style: TextStyle(fontSize: 15, color: Color((0xFF0B014A))),
       ),
       actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
       actions: [
@@ -79,7 +83,7 @@ class _QuizDetailScreenState extends State<QuizDetailScreen> {
               child: ElevatedButton(
                 onPressed: () => Navigator.pop(context, true),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF1B29A4),
+                  backgroundColor: const Color((0xFFFF7901)),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
@@ -97,6 +101,11 @@ class _QuizDetailScreenState extends State<QuizDetailScreen> {
   }
 
   Future<bool> _confirmQuit() async {
+    // ✅ If quiz is completed, allow exit immediately
+    if (_quizCompleted) {
+      return true;
+    }
+
     final shouldQuit = await showDialog<bool>(
       context: context,
       barrierDismissible: false,
@@ -216,7 +225,7 @@ class _QuizDetailScreenState extends State<QuizDetailScreen> {
     }
   }
 
-  void _calculateScore() {
+  void _calculateScore() async {
     int correctAnswers = 0;
 
     for (int i = 0; i < _questions.length; i++) {
@@ -225,38 +234,35 @@ class _QuizDetailScreenState extends State<QuizDetailScreen> {
       }
     }
 
+    // ✅ 10 points per correct answer, max 100
+    final int calculatedScore = (correctAnswers * 10).clamp(0, 100);
+
+    // ✅ Save to local storage
+    await ScoreService.addScore(calculatedScore);
+
     setState(() {
-      _score = ((correctAnswers / _questions.length) * 100).round();
+      _quizScore = calculatedScore; // ⭐ SINGLE SOURCE
       _quizCompleted = true;
-
-      if (_score >= 70) {
-        _confettiController.play();
-      }
     });
-  }
 
-  void _restartQuiz() {
-    List<List<int>> newShuffled = [];
-    for (var question in _questions) {
-      newShuffled.add(_generateShuffledOptions(question));
+    // 🎉 Confetti if passed
+    if (_quizScore >= 70) {
+      _confettiController.play();
     }
-
-    setState(() {
-      _currentQuestionIndex = 0;
-      _selectedAnswer = null;
-      _userAnswers = List.filled(_questions.length, -1);
-      _shuffledOptions = newShuffled;
-      _score = 0;
-      _quizCompleted = false;
-    });
   }
 
   @override
   Widget build(BuildContext context) {
     return PopScope(
-      canPop: false, // 🚫 block default pop
+      canPop: false,
       onPopInvoked: (didPop) async {
         if (didPop) return;
+
+        // ✅ Allow direct pop if quiz completed
+        if (_quizCompleted) {
+          Navigator.pop(context);
+          return;
+        }
 
         final shouldQuit = await _confirmQuit();
         if (shouldQuit && mounted) {
@@ -328,7 +334,9 @@ class _QuizDetailScreenState extends State<QuizDetailScreen> {
           LinearProgressIndicator(
             value: (_currentQuestionIndex + 1) / _questions.length,
             backgroundColor: Colors.grey[200],
-            valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF1B29A4)),
+            valueColor: const AlwaysStoppedAnimation<Color>(
+              Color((0xFFFF7901)),
+            ),
           ),
           const SizedBox(height: 20),
 
@@ -337,7 +345,7 @@ class _QuizDetailScreenState extends State<QuizDetailScreen> {
             style: const TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w600,
-              color: Color(0xFF1B29A4),
+              color: Color((0xFFFF7901)),
             ),
           ),
           const SizedBox(height: 16),
@@ -381,7 +389,7 @@ class _QuizDetailScreenState extends State<QuizDetailScreen> {
               child: ElevatedButton(
                 onPressed: _selectedAnswer != null ? _nextQuestion : null,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF1B29A4),
+                  backgroundColor: const Color((0xFFFF7901)),
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
@@ -422,7 +430,7 @@ class _QuizDetailScreenState extends State<QuizDetailScreen> {
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
         side: BorderSide(
-          color: isSelected ? const Color(0xFF1B29A4) : Colors.transparent,
+          color: isSelected ? const Color((0xFFFF7901)) : Colors.transparent,
           width: 2,
         ),
       ),
@@ -431,7 +439,7 @@ class _QuizDetailScreenState extends State<QuizDetailScreen> {
           width: 32,
           height: 32,
           decoration: BoxDecoration(
-            color: isSelected ? const Color(0xFF1B29A4) : Colors.grey[200],
+            color: isSelected ? const Color((0xFFFF7901)) : Colors.grey[200],
             shape: BoxShape.circle,
           ),
           child: Center(
@@ -461,12 +469,11 @@ class _QuizDetailScreenState extends State<QuizDetailScreen> {
   // ---------------------------
 
   Widget _buildResultsScreen() {
-    final passed = _score >= 70;
+    final passed = _quizScore >= 70;
 
     return Stack(
       alignment: Alignment.topCenter,
       children: [
-        // RESULTS UI
         Padding(
           padding: const EdgeInsets.all(20.0),
           child: Column(
@@ -488,13 +495,14 @@ class _QuizDetailScreenState extends State<QuizDetailScreen> {
               ),
               const SizedBox(height: 16),
               Text(
-                'Votre score: $_score%',
+                'Score : $_quizScore points',
                 style: TextStyle(
                   fontSize: 32,
                   fontWeight: FontWeight.bold,
                   color: passed ? Colors.green : Colors.orange,
                 ),
               ),
+
               const SizedBox(height: 8),
               Text(
                 passed
@@ -508,7 +516,7 @@ class _QuizDetailScreenState extends State<QuizDetailScreen> {
                 children: [
                   Expanded(
                     child: ElevatedButton(
-                      onPressed: _restartQuiz,
+                      onPressed: () => Navigator.pop(context),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFF1B29A4),
                         shape: RoundedRectangleBorder(
@@ -516,23 +524,9 @@ class _QuizDetailScreenState extends State<QuizDetailScreen> {
                         ),
                       ),
                       child: const Text(
-                        'Recommencer',
+                        'Retour au menu principal',
                         style: TextStyle(color: Colors.white),
                       ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: () => Navigator.pop(context),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.grey[300],
-                        foregroundColor: Colors.grey[700],
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      child: const Text('Retour aux quiz'),
                     ),
                   ),
                 ],
