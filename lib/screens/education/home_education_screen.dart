@@ -65,7 +65,54 @@ class _HomeNewScreenState extends State<HomeNewScreen> {
           _buildWeeklyVideos(context),
 
           const SizedBox(height: 28),
-          _sectionTitle("Power Quiz Actifs ⚡"),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Row(
+              children: [
+                const Expanded(
+                  child: Text(
+                    "Power Quiz Actifs ⚡",
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFF0B014A),
+                    ),
+                  ),
+                ),
+
+                // 🔴 Tiny reset button (ICON ONLY)
+                Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(20),
+                    onTap: () async {
+                      await QuizCooldownService.resetAll();
+
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text("Quiz cooldowns reset ✅"),
+                            duration: Duration(seconds: 2),
+                          ),
+                        );
+                      }
+
+                      setState(() {});
+                    },
+                    child: const Padding(
+                      padding: EdgeInsets.all(4), // 👈 controls ripple size
+                      child: Icon(
+                        Icons.restart_alt_rounded,
+                        size: 20,
+                        color: Colors.redAccent,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
           const SizedBox(height: 12),
 
           _buildQuizCard(
@@ -120,68 +167,93 @@ class _HomeNewScreenState extends State<HomeNewScreen> {
   Widget _buildWeeklyVideos(BuildContext context) {
     final weeklyVideos = widget.videos.take(5).toList();
 
-    return SizedBox(
-      height: 160,
-      child: ListView.separated(
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        scrollDirection: Axis.horizontal,
-        itemCount: weeklyVideos.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 12),
-        itemBuilder: (context, index) {
-          final video = weeklyVideos[index];
+    return Column(
+      children: [
+        SizedBox(
+          height: 160,
+          child: ListView.separated(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            scrollDirection: Axis.horizontal,
+            itemCount: weeklyVideos.length,
+            separatorBuilder: (_, __) => const SizedBox(width: 12),
+            itemBuilder: (context, index) {
+              final video = weeklyVideos[index];
 
-          final String? thumbnailUrl =
-              video["thumbnailUrl"] ?? _cloudinaryThumb(video["videoUrl"]);
+              final String? thumbnailUrl =
+                  video["thumbnailUrl"] ?? _cloudinaryThumb(video["videoUrl"]);
 
-          return GestureDetector(
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder:
-                      (_) => VideoPlayerScreen(
-                        title: video["title"] ?? "Vidéo",
-                        description: video["description"] ?? "",
-                        videoUrl: video["videoUrl"],
-                      ),
-                ),
-              );
-            },
-            child: Container(
-              width: 220,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(14),
-                color: const Color(0xFF1B29A4).withOpacity(0.08),
-              ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(14),
-                child: Stack(
-                  alignment: Alignment.center,
+              return GestureDetector(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder:
+                          (_) => VideoPlayerScreen(
+                            title: video["title"] ?? "Vidéo",
+                            description: video["description"] ?? "",
+                            videoUrl: video["videoUrl"],
+                          ),
+                    ),
+                  );
+                },
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    // Thumbnail (if available)
-                    if (thumbnailUrl != null)
-                      Positioned.fill(
-                        child: Image.network(thumbnailUrl, fit: BoxFit.cover),
+                    Container(
+                      width: 220,
+                      height: 136,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(14),
+                        color: const Color(0xFF1B29A4).withOpacity(0.08),
                       ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(14),
+                        child: Stack(
+                          alignment: Alignment.center,
+                          children: [
+                            if (thumbnailUrl != null)
+                              Positioned.fill(
+                                child: Image.network(
+                                  thumbnailUrl,
+                                  fit: BoxFit.cover,
+                                ),
+                              ),
 
-                    // Semi-transparent dark overlay (optional but nice)
-                    Positioned.fill(
-                      child: Container(color: Colors.black.withOpacity(0.15)),
+                            Positioned.fill(
+                              child: Container(
+                                color: Colors.black.withOpacity(0.15),
+                              ),
+                            ),
+
+                            const Icon(
+                              Icons.play_circle_fill_rounded,
+                              size: 56,
+                              color: Color(0xFFFF7901),
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
 
-                    // ▶️ PLAY BUTTON (ALWAYS VISIBLE)
-                    const Icon(
-                      Icons.play_circle_fill_rounded,
-                      size: 56,
-                      color: Color((0xFFFF7901)), // blue play button
+                    const SizedBox(height: 8),
+
+                    Text(
+                      video["title"] ?? "Vidéo",
+                      textAlign: TextAlign.center,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ],
                 ),
-              ),
-            ),
-          );
-        },
-      ),
+              );
+            },
+          ),
+        ),
+      ],
     );
   }
 
@@ -243,7 +315,7 @@ class _HomeNewScreenState extends State<HomeNewScreen> {
               opacity: canPlay ? 1.0 : 0.55,
               child: Card(
                 elevation: canPlay ? 2 : 0,
-                color: canPlay ? Colors.white : Colors.grey.shade200,
+                color: canPlay ? Colors.white : Colors.grey.shade300,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(16),
                 ),
@@ -259,7 +331,7 @@ class _HomeNewScreenState extends State<HomeNewScreen> {
                           color:
                               canPlay
                                   ? color.withOpacity(0.15)
-                                  : Colors.grey.shade300,
+                                  : Colors.grey.shade200,
                           borderRadius: BorderRadius.circular(14),
                         ),
                         child: Icon(
@@ -347,24 +419,24 @@ class _HomeNewScreenState extends State<HomeNewScreen> {
                                 vertical: 6,
                               ),
                               decoration: BoxDecoration(
-                                color: Colors.grey.shade300,
+                                color: Colors.grey.shade200,
                                 borderRadius: BorderRadius.circular(999),
                               ),
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  const Icon(
+                                  Icon(
                                     Icons.lock_rounded,
                                     size: 14,
-                                    color: Colors.grey,
+                                    color: Colors.grey.shade500,
                                   ),
                                   const SizedBox(width: 6),
                                   Text(
                                     '${hours}h ${minutes}m',
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                       fontSize: 11,
                                       fontWeight: FontWeight.w600,
-                                      color: Colors.grey,
+                                      color: Colors.grey.shade500,
                                     ),
                                   ),
                                 ],

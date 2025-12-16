@@ -21,10 +21,7 @@ class QuizCooldownService {
   /// Save play timestamp
   static Future<void> markPlayed(String difficulty) async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setInt(
-      _key(difficulty),
-      DateTime.now().millisecondsSinceEpoch,
-    );
+    await prefs.setInt(_key(difficulty), DateTime.now().millisecondsSinceEpoch);
   }
 
   /// Remaining cooldown (optional, for UI)
@@ -40,5 +37,21 @@ class QuizCooldownService {
     if (elapsed >= cooldownMs) return Duration.zero;
 
     return Duration(milliseconds: cooldownMs - elapsed);
+  }
+
+  /// 🔴 DEMO / TESTING ONLY
+  /// Reset cooldown for one difficulty
+  static Future<void> reset(String difficulty) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_key(difficulty));
+  }
+
+  /// 🔴 DEMO / TESTING ONLY
+  /// Reset ALL quiz cooldowns
+  static Future<void> resetAll() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_key("easy"));
+    await prefs.remove(_key("medium"));
+    await prefs.remove(_key("hard"));
   }
 }
