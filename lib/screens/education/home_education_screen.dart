@@ -91,7 +91,7 @@ class _HomeNewScreenState extends State<HomeNewScreen> {
                       if (context.mounted) {
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
-                            content: Text("Quiz cooldowns reset ✅"),
+                            content: Text("Quiz délai réinitialisé ✅"),
                             duration: Duration(seconds: 2),
                           ),
                         );
