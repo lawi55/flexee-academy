@@ -3,7 +3,7 @@ import 'package:http/http.dart' as http;
 
 Future<List<dynamic>> fetchStories(String token) async {
   final res = await http.get(
-    Uri.parse("http://102.207.250.73:5000/edu"),
+    Uri.parse("https://flexee-pay-backend.onrender.com/edu"),
     headers: {'Authorization': 'Bearer $token'},
   );
 
@@ -20,9 +20,9 @@ Future<List<dynamic>> fetchStories(String token) async {
 
 Future<List<dynamic>> fetchVideos(String token) async {
   final res = await http.get(
-    Uri.parse("http://102.207.250.73:5000/video/all/"),
+    Uri.parse("https://flexee-pay-backend.onrender.com/video/all/"),
     headers: {'Authorization': 'Bearer $token'},
-  );
+  );  
 
   if (res.statusCode != 200) return [];
 

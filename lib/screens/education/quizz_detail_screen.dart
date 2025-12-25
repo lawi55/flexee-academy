@@ -120,7 +120,7 @@ class _QuizDetailScreenState extends State<QuizDetailScreen> {
   Future<void> fetchQuiz() async {
     try {
       final url =
-          "http://102.207.250.73:5000/quiz/start?difficulty=${widget.difficulty}";
+          "https://flexee-pay-backend.onrender.com/quiz/start?difficulty=${widget.difficulty}";
 
       final response = await http.get(
         Uri.parse(url),

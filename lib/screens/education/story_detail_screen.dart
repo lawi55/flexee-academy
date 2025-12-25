@@ -134,13 +134,14 @@ class _StoryDetailScreenState extends State<StoryDetailScreen>
     try {
       final response = await http.get(
         Uri.parse(
-          "http://102.207.250.73:5000/edu/${widget.storyId}",
+          "https://flexee-pay-backend.onrender.com/edu/${widget.storyId}",
         ),
         headers: {'Authorization': 'Bearer ${widget.token}'},
       );
 
       if (response.statusCode == 200) {
         final responseData = jsonDecode(response.body);
+        print (responseData);
         List<dynamic> slides = [];
 
         if (responseData is Map && responseData['slides'] is List) {
