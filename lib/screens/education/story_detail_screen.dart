@@ -134,7 +134,7 @@ class _StoryDetailScreenState extends State<StoryDetailScreen>
     try {
       final response = await http.get(
         Uri.parse(
-          "https://flexee-pay-backend.onrender.com/edu/${widget.storyId}",
+          "https://api.flexeepay.tn/edu/${widget.storyId}",
         ),
         headers: {'Authorization': 'Bearer ${widget.token}'},
       );
